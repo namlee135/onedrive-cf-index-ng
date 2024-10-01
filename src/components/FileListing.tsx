@@ -44,6 +44,11 @@ const EPUBPreview = dynamic(() => import('./previews/EPUBPreview'), {
   ssr: false,
 })
 
+// Natural sort compare function
+function naturalSortCompare(a: string, b: string): number {
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+}
+
 /**
  * Convert url query into path string
  *
@@ -193,6 +198,9 @@ const FileListing: FC<{ query?: ParsedUrlQuery }> = ({ query }) => {
   if ('folder' in responses[0]) {
     // Expand list of API returns into flattened file data
     const folderChildren = [].concat(...responses.map(r => r.folder.value)) as OdFolderObject['value']
+
+    // Sort folderChildren using natural sort
+    folderChildren.sort((a, b) => naturalSortCompare(a.name, b.name))
 
     // Find README.md file to render
     const readmeFile = folderChildren.find(c => c.name.toLowerCase() === 'readme.md')
