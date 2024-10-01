@@ -44,11 +44,6 @@ const EPUBPreview = dynamic(() => import('./previews/EPUBPreview'), {
   ssr: false,
 })
 
-// Natural sort compare function
-function naturalSortCompare(a: string, b: string): number {
-  return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
-}
-
 /**
  * Convert url query into path string
  *
@@ -197,10 +192,32 @@ const FileListing: FC<{ query?: ParsedUrlQuery }> = ({ query }) => {
 
   if ('folder' in responses[0]) {
     // Expand list of API returns into flattened file data
-    const folderChildren = [].concat(...responses.map(r => r.folder.value)) as OdFolderObject['value']
+    let folderChildren = [].concat(...responses.map(r => r.folder.value)) as OdFolderObject['value']
 
-    // Sort folderChildren using natural sort
-    folderChildren.sort((a, b) => naturalSortCompare(a.name, b.name))
+    // Sort folderChildren
+    folderChildren.sort((a, b) => {
+      const aName = a.name.toLowerCase();
+      const bName = b.name.toLowerCase();
+      
+      // Check if both names start with numbers
+      const aMatch = aName.match(/^(\d+)/);
+      const bMatch = bName.match(/^(\d+)/);
+      
+      if (aMatch && bMatch) {
+        // If both start with numbers, compare them numerically
+        const aNum = parseInt(aMatch[0], 10);
+        const bNum = parseInt(bMatch[0], 10);
+        if (aNum !== bNum) {
+          return aNum - bNum;
+        }
+      } else if (aMatch || bMatch) {
+        // If only one starts with a number, put it first
+        return aMatch ? -1 : 1;
+      }
+      
+      // For non-numeric or equal numeric prefixes, sort alphabetically
+      return aName.localeCompare(bName);
+    });
 
     // Find README.md file to render
     const readmeFile = folderChildren.find(c => c.name.toLowerCase() === 'readme.md')
